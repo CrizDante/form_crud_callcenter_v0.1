@@ -194,6 +194,16 @@
             color: white;
         }
 
+        button#import-btn{
+            background-color: royalblue;
+            color: white;
+        }
+
+        button#import-btn:hover{
+            background-color: steelblue;
+            color: white;
+        }
+
         button#clear{
             background-color: firebrick;
             color: white;
@@ -263,7 +273,11 @@
             </div>
             <input type="hidden" id="form-id-input">
         </form>
-        <button id="export-btn">Exportar a Excel</button>
+        <div style="display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
+            <button id="export-btn">Exportar a Excel</button>
+            <button id="import-btn">Importar desde CSV</button>
+            <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+        </div>
     </main>
 
     <div class="search-container">
@@ -290,6 +304,8 @@
         // Referencia al nuevo input de búsqueda
         const searchInput = document.getElementById('search-input'); 
         const clearBtn = document.getElementById('clear');
+        const importBtn = document.getElementById('import-btn');
+        const csvFileInput = document.getElementById('csv-file-input');
 
 
         // --- Database Management ---
@@ -699,6 +715,100 @@ async function loadRecords() {
         }
 
         /**
+         * Imports an array of new records into the IndexedDB.
+         * @param {Array<object>} newRecords An array of record objects to add.
+         */
+        async function importNewRecords(newRecords) {
+            if (!db || newRecords.length === 0) {
+                return;
+            }
+            try {
+                const transaction = db.transaction('registros', 'readwrite');
+                const store = transaction.objectStore('registros');
+
+                const promises = newRecords.map(record => requestToPromise(store.add(record)));
+
+                await Promise.all(promises);
+
+                alert(`${newRecords.length} registro(s) nuevo(s) importado(s) exitosamente.`);
+                await loadRecords(); // Refresh the list to show the new records
+
+            } catch (error) {
+                console.error('Error al importar los nuevos registros:', error);
+                alert('Ocurrió un error durante la importación.');
+            }
+        }
+
+        /**
+         * Parses CSV content, validates it, and checks for duplicates.
+         * @param {string} csvContent The string content of the CSV file.
+         */
+        async function processCSV(csvContent) {
+            try {
+                const lines = csvContent.trim().split(/\r?\n/);
+                if (lines.length < 2) {
+                    alert('El archivo CSV está vacío o solo contiene la cabecera.');
+                    return;
+                }
+
+                const header = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+                const expectedHeaders = ['nombre', 'dni', 'correo', 'tel', 'direccion', 'postal', 'iban', 'cups', 'fecha_agenda', 'estado'];
+
+                const allHeadersPresent = expectedHeaders.every(h => header.includes(h));
+                if (!allHeadersPresent) {
+                    alert(`El archivo CSV no es válido. Debe contener las siguientes columnas: ${expectedHeaders.join(', ')}`);
+                    return;
+                }
+
+                const recordsFromCSV = lines.slice(1).filter(line => line.trim() !== '').map(line => {
+                    const values = line.split(';').map(v => v.trim().replace(/"/g, ''));
+                    const record = {};
+                    header.forEach((h, i) => {
+                        if (expectedHeaders.includes(h)) {
+                            record[h] = values[i] === 'N/A' ? '' : values[i];
+                        }
+                    });
+                    return record;
+                });
+
+                const transaction = db.transaction('registros', 'readonly');
+                const store = transaction.objectStore('registros');
+                const existingRecords = await requestToPromise(store.getAll());
+                const existingDnis = new Set(existingRecords.map(r => r.dni));
+
+                const newRecords = [];
+                const duplicateRecords = [];
+
+                for (const record of recordsFromCSV) {
+                    if (!record.dni || record.dni.trim() === '') {
+                        continue;
+                    }
+                    if (existingDnis.has(record.dni)) {
+                        duplicateRecords.push(record);
+                    } else {
+                        newRecords.push(record);
+                        existingDnis.add(record.dni);
+                    }
+                }
+
+                const confirmationMessage = `Análisis del CSV completado:\n` +
+                                            `- ${newRecords.length} registros nuevos encontrados.\n` +
+                                            `- ${duplicateRecords.length} registros duplicados omitidos.\n\n` +
+                                            `¿Desea importar los registros nuevos?`;
+
+                if (newRecords.length > 0 && confirm(confirmationMessage)) {
+                    await importNewRecords(newRecords);
+                } else if (newRecords.length === 0) {
+                    alert('No se encontraron registros nuevos para importar.');
+                }
+
+            } catch (error) {
+                console.error('Error procesando el archivo CSV:', error);
+                alert('Ocurrió un error al procesar el archivo CSV.');
+            }
+        }
+
+        /**
          * Function to clear the form fields and reset the hidden ID.
          */
         function clearForm() {
@@ -776,6 +886,35 @@ async function loadRecords() {
 
                 // Añade el event listener para el input de búsqueda una vez que los registros se cargan
                 searchInput.addEventListener('input', filterRecords);
+
+                // --- CSV Import Logic ---
+                importBtn.addEventListener('click', () => {
+                    csvFileInput.click(); // Trigger the hidden file input
+                });
+
+                csvFileInput.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (!file) {
+                        return; // No file selected
+                    }
+
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        const csvContent = e.target.result;
+                        processCSV(csvContent); // Process the content
+                    };
+
+                    reader.onerror = (error) => {
+                        console.error('Error reading file:', error);
+                        alert('Error al leer el archivo.');
+                    };
+
+                    reader.readAsText(file, 'UTF-8');
+
+                    // Reset file input to allow re-uploading the same file
+                    csvFileInput.value = '';
+                });
             } catch (error) {
                 console.error('The application could not be initialized correctly:', error);
             }
