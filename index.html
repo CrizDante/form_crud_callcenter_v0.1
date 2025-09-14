@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamientos y Ventas</title>
+    <style>
+        body {
+            font-family: sans-serif !important;
+            margin: unset;
+        }
+
+        .form_layout {
+            font-size: 0;
+            display: grid;
+            grid-template-columns: auto;
+            background-color: cadetblue;
+            width: fit-content;
+            padding: 1rem;
+            border-radius: 1rem;
+            justify-items: center;
+        }
+
+        .input_layout {
+            display: grid;
+            max-width: fit-content;
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .input_layout label {
+            position: absolute;
+            top: -0.6rem;
+            left: 0.2rem;
+            width: 2rem;
+            white-space: nowrap;
+            font-size: 1rem;
+            text-shadow: 1px 1px 2px white;
+        }
+
+        .input_layout input {
+            width: 20em;
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            outline-width: 0.5rem;
+            border: none;
+            box-shadow: 0rem 0rem 0.3rem 0.1rem darkslategray;
+            padding-block: 0.25rem;
+            padding-inline: 0.5rem;
+        }
+
+        .input_layout+#fecha_agenda {
+            margin-top: 0.5rem;
+        }
+
+        .input_layout #fecha_agenda {
+            /* width: 20.3em; */
+        }
+
+        .input_layout select {
+            width: 21em;
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            outline-width: 0.5rem;
+            border: none;
+            box-shadow: 0rem 0rem 0.3rem 0.1rem darkslategray;
+            padding-block: 0.3rem;
+            padding-inline: 0.4rem;
+        }
+
+        button {
+            width: fit-content;
+            font-size: 1rem;
+            font-weight: 600;
+            padding-inline: 1rem;
+            border-radius: 0.5rem;
+            outline-width: 0.5rem;
+            border: none;
+            box-shadow: 0rem 0.3rem 0.3rem darkslategray;
+            max-height: fit-content;
+        }
+
+        button:hover {
+            background-color: darkgray;
+            color: white;
+            box-shadow: 0rem 0.3rem 0.3rem darkslategray;
+        }
+
+        #record-list {
+            display: flex;
+            overflow-x: auto;
+            padding-block: 1rem;
+            column-gap: 1.5rem;
+        }
+
+        #record-list li {
+            background-color: gainsboro;
+            padding: 1rem;
+            width: fit-content;
+            min-width: 17.5rem;
+            border-radius: 1rem;
+            box-shadow: 0rem 0rem 0.3rem 0.1rem darkslategray;
+        }
+
+        .record-actions-container {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .record-actions-container p {
+            grid-column: span 3;
+        }
+
+        .copy-btn {
+            background-color: royalblue;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: firebrick;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background-color: steelblue;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: darkred;
+            color: white;
+        }
+
+        main {
+            display: flex;
+            padding-inline: 2rem;
+            padding-bottom: 2.8rem;
+            gap: 1rem;
+        }
+
+        nav {
+            padding: 1rem;
+            box-shadow: 0rem 0.35rem 1rem darkgray;
+        }
+
+        nav span {
+            font-size: 2rem;
+            color: darkgray;
+        }
+
+        h1 {
+            margin-left: 2rem;
+            color: darkslategray;
+        }
+
+        /* Estilo para el input de búsqueda */
+        .search-container {
+            padding: 1rem 2rem;
+            background-color: lightgray;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-container input {
+            padding-inline: 0.5rem;
+            width: 20em;
+            height: 2em;
+            border-radius: 0.5rem;
+            border: 1px solid darkslategray;
+        }
+        .form_control_layout{
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .estado-agend {
+            background-color: lightblue !important; /* Color for "Agendado" */
+        }
+    
+        .estado-vent {
+            background-color: lightgreen !important; /* Color for "Venta" */
+        }
+
+        button#export-btn{
+            background-color: green;
+            color: white;
+        }
+
+        button#export-btn:hover{
+            background-color: darkslategrey;
+            color: white;
+        }
+
+        button#clear{
+            background-color: firebrick;
+            color: white;
+        }
+
+        button#clear:hover{
+            background-color: darkred;
+            color: whitesmoke;
+        }
+    
+    </style>
+</head>
+
+<body>
+    <nav><span>Bienvenido, Cristian López (Dante)</span></nav>
+    <h1>Formulario de agendamientos</h1>
+    <main>
+        <form class="form_layout">
+            <div class="input_layout">
+                <input id="nombre-input">
+                <label for="nombre-input">Nombre completo</label>
+            </div>
+            <div class="input_layout">
+                <input id="dni-input">
+                <label for="dni-input">DNI</label>
+            </div>
+            <div class="input_layout">
+                <input id="correo-input">
+                <label for="correo-input">Correo</label>
+            </div>
+            <div class="input_layout">
+                <input id="tel-input">
+                <label for="tel-input">Teléfono</label>
+            </div>
+            <div class="input_layout">
+                <input id="direccion-input">
+                <label for="direccion-input">Dirección</label>
+            </div>
+            <div class="input_layout">
+                <input id="postal-input">
+                <label for="postal-input">Código postal</label>
+            </div>
+            <div class="input_layout">
+                <input id="iban-input">
+                <label for="iban-input">IBAN</label>
+            </div>
+            <div class="input_layout">
+                <input id="cups-input">
+                <label for="cups-input">CUPS</label>
+            </div>
+            <div class="input_layout">
+                <input id="fecha_agenda" type="datetime-local">
+                <label for="fecha_agenda">Fecha y Hora</label>
+            </div>
+            <div class="input_layout">
+                <select id="estado-input">
+                    <option value="">--Selecciona una opción--</option>
+                    <option value="agend">Agendado</option>
+                    <option value="vent">Venta</option>
+                    <option value="n_cont">No contacto</option>
+                </select>
+                <label for="estado-input">Tipificación</label>
+            </div>
+            <div class="form_control_layout">
+                <button type="submit">Guardar</button>
+                <button id="clear">🗑</button>
+            </div>
+            <input type="hidden" id="form-id-input">
+        </form>
+        <button id="export-btn">Exportar a Excel</button>
+    </main>
+
+    <div class="search-container">
+        <h3>Filtrar registros</h3>
+        <input type="text" id="search-input" placeholder="Buscar por cualquier campo...">
+    </div>
+
+    <ul id="record-list">
+    </ul>
+    <script>
+        // --- References to DOM elements ---
+        const form = document.querySelector('form');
+        const recordList = document.getElementById('record-list');
+        const estadoSelect = document.getElementById('estado-input');
+        const formIdInput = document.createElement('input');
+        formIdInput.type = 'hidden';
+        formIdInput.id = 'form-id-input';
+        form.appendChild(formIdInput);
+
+        // New elements for user management
+        const nav = document.querySelector('nav');
+        const userInput = document.getElementById('user_input');
+        const saveUserBtn = document.getElementById('save-user-btn');
+        // Referencia al nuevo input de búsqueda
+        const searchInput = document.getElementById('search-input'); 
+        const clearBtn = document.getElementById('clear');
+
+
+        // --- Database Management ---
+        let db;
+
+        /**
+         * Initializes the IndexedDB database and returns a promise with the instance.
+         */
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('MiBaseDeDatos', 1);
+
+                request.onupgradeneeded = event => {
+                    const upgradeDb = event.target.result;
+                    if (!upgradeDb.objectStoreNames.contains('registros')) {
+                        upgradeDb.createObjectStore('registros', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = event => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = event => reject(event.target.error);
+            });
+        }
+
+        /**
+         * Converts an IndexedDB request into a promise for use with async/await.
+         * @param {IDBRequest} request The IndexedDB request.
+         * @returns {Promise<any>} A promise that resolves with the result of the request.
+         */
+        function requestToPromise(request) {
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // New elements for user management
+
+        // --- User Management Logic ---
+
+        // Function to save the user's name to localStorage
+        if (saveUserBtn) { // <-- ¡Añade esta verificación!
+            saveUserBtn.addEventListener('click', () => {
+                const userName = userInput.value.trim();
+                if (userName) {
+                    localStorage.setItem('agente', userName);
+                    displayUserName();
+                } else {
+                    alert('Por favor, introduce tu nombre.');
+                }
+            });
+        }
+
+        // Function to display the user's name
+        function displayUserName() {
+            const userName = localStorage.getItem('agente');
+            if (userName) {
+                nav.innerHTML = `<span>Bienvenido, ${userName}</span>`;
+            }
+        }
+
+        // --- Form Logic ---
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+
+            const dataToSave = {
+                nombre: document.getElementById('nombre-input').value.trim(),
+                dni: document.getElementById('dni-input').value.trim(),
+                correo: document.getElementById('correo-input').value.trim(),
+                tel: document.getElementById('tel-input').value.trim(),
+                direccion: document.getElementById('direccion-input').value.trim(),
+                postal: document.getElementById('postal-input').value.trim(),
+                iban: document.getElementById('iban-input').value.trim(),
+                cups: document.getElementById('cups-input').value.trim(),
+                fecha_agenda: document.getElementById('fecha_agenda').value,
+                estado: estadoSelect.value
+            };
+
+            const recordId = formIdInput.value ? parseInt(formIdInput.value, 10) : null;
+
+            const requiredFields = [dataToSave.nombre, dataToSave.dni, dataToSave.iban, dataToSave.cups, dataToSave.estado];
+            if (requiredFields.some(field => !field)) {
+                alert("Por favor, rellena los campos obligatorios (Nombre, DNI, IBAN, CUPS, Tipificación).");
+                return;
+            }
+
+            try {
+                if (recordId) {
+                    // Update an existing record
+                    await updateRecord(recordId, dataToSave);
+                    alert('Registro actualizado exitosamente.');
+                } else {
+                    // Add a new record
+                    const transaction = db.transaction('registros', 'readwrite');
+                    const store = transaction.objectStore('registros');
+                    const newRecordId = await requestToPromise(store.add(dataToSave));
+
+                    const noRecordsMessage = recordList.querySelector('li');
+                    if (noRecordsMessage && noRecordsMessage.textContent.includes('No hay registros')) {
+                        recordList.innerHTML = '';
+                    }
+                    const newRecord = { ...dataToSave, id: newRecordId };
+                    const li = createRecordLi(newRecord);
+                    recordList.appendChild(li);
+                    alert('Registro guardado exitosamente.');
+                }
+                form.reset();
+                formIdInput.value = ''; // Reset the hidden ID
+                loadRecords(); // Reload the list to show the changes
+            } catch (error) {
+                console.error('Error al guardar/actualizar el registro:', error);
+                alert('Error al guardar/actualizar el registro.');
+            }
+        });
+
+        /**
+         * Updates a record in the database.
+         * @param {number} recordId The ID of the record to update.
+         * @param {object} newData The new data for the record.
+         */
+        async function updateRecord(recordId, newData) {
+            const transaction = db.transaction('registros', 'readwrite');
+            const store = transaction.objectStore('registros');
+            const recordToUpdate = await requestToPromise(store.get(recordId));
+
+            if (recordToUpdate) {
+                const updatedRecord = { ...recordToUpdate, ...newData, id: recordId };
+                await requestToPromise(store.put(updatedRecord));
+            } else {
+                throw new Error('Registro no encontrado para actualizar.');
+            }
+        }
+
+        /**
+         * Formats a local date and time string (YYYY-MM-DDTHH:mm) to "dd/mm/aaaa HH:mm".
+         * @param {string} dateString The value from the datetime-local input.
+         * @returns {string} The formatted date and time.
+         */
+        function formatLocalDate(dateString) {
+            if (!dateString) {
+                return 'N/A';
+            }
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+        // Function to create a list item (li) for a single record
+        function createRecordLi(record) {
+            const li = document.createElement('li');
+            li.dataset.id = record.id;
+
+            const formattedDate = formatLocalDate(record.fecha_agenda);
+
+            const fields = [
+                { label: 'Nombre', value: record.nombre },
+                { label: 'DNI', value: record.dni },
+                { label: 'Correo', value: record.correo },
+                { label: 'Teléfono', value: record.tel },
+                { label: 'Dirección', value: record.direccion },
+                { label: 'C. Postal', value: record.postal },
+                { label: 'IBAN', value: record.iban },
+                { label: 'CUPS', value: record.cups },
+                { label: 'Fecha Agenda', value: formattedDate }
+            ];
+
+            fields.forEach(field => {
+                const p = document.createElement('p');
+                p.innerHTML = `<strong>${field.label}:</strong> ${field.value || 'N/A'}`;
+                li.appendChild(p);
+            });
+
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'record-actions-container';
+
+            const tipificacionP = document.createElement('p');
+            const estadoTexto = getEstadoText(record.estado);
+            tipificacionP.innerHTML = `<strong>Tipificación:</strong>`;
+
+            const estadoSpan = document.createElement('span');
+            estadoSpan.className = `estado-display ${record.estado}`;
+            estadoSpan.dataset.estado = record.estado;
+            estadoSpan.textContent = estadoTexto;
+            tipificacionP.appendChild(estadoSpan);
+            actionsContainer.appendChild(tipificacionP);
+
+            // Add the class to the li based on the record's estado
+            li.classList.add(`estado-${record.estado}`);
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'edit-btn';
+            editBtn.dataset.recordId = record.id;
+            editBtn.textContent = 'Editar';
+            actionsContainer.appendChild(editBtn);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.dataset.recordId = record.id;
+            copyBtn.textContent = 'Copiar';
+            actionsContainer.appendChild(copyBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.dataset.recordId = record.id;
+            deleteBtn.textContent = 'Borrar';
+            actionsContainer.appendChild(deleteBtn);
+
+            li.appendChild(actionsContainer);
+
+            return li;
+        }
+
+        
+
+        /**
+ * Loads all records from the database and displays them in the list.
+ */
+async function loadRecords() {
+    if (!db) {
+        console.error('Database not initialized.');
+        return;
+    }
+
+    try {
+        const transaction = db.transaction('registros', 'readonly');
+        const store = transaction.objectStore('registros');
+        const records = await requestToPromise(store.getAll());
+
+        // Sort records by fecha_agenda in ascending order
+        records.sort((a, b) => {
+            const dateA = new Date(a.fecha_agenda);
+            const dateB = new Date(b.fecha_agenda);
+            return dateA - dateB;
+        });
+
+        recordList.innerHTML = ''; // Clear the current list
+
+        if (records.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = 'No hay registros guardados.';
+            recordList.appendChild(li);
+        } else {
+            records.forEach(record => {
+                const li = createRecordLi(record);
+                recordList.appendChild(li);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar los registros:', error);
+        const li = document.createElement('li');
+        li.textContent = 'Error al cargar los registros.';
+        recordList.appendChild(li);
+    }
+}
+
+
+        /**
+         * Filters the records list based on the search input value.
+         */
+        function filterRecords() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const records = recordList.children;
+
+            for (const record of records) {
+                const recordText = record.textContent.toLowerCase();
+                if (recordText.includes(searchTerm)) {
+                    record.style.display = '';
+                } else {
+                    record.style.display = 'none';
+                }
+            }
+        }
+
+        // --- Event logic for the records list (Corrected) ---
+        recordList.addEventListener('click', async event => {
+            const button = event.target.closest('.edit-btn, .copy-btn, .delete-btn');
+
+            if (!button) {
+                return;
+            }
+
+            const recordId = parseInt(button.dataset.recordId, 10);
+
+            if (isNaN(recordId)) {
+                console.error('The record ID is not a valid number.');
+                return;
+            }
+
+            if (button.classList.contains('edit-btn')) {
+                await handleEditRecord(recordId); // Updated to handle all fields
+            } else if (button.classList.contains('copy-btn')) {
+                await handleCopyRecord(recordId);
+            } else if (button.classList.contains('delete-btn')) {
+                await handleDeleteRecord(recordId);
+            }
+        });
+
+        // --- Handle editing a record (New function) ---
+        async function handleEditRecord(recordId) {
+            try {
+                const transaction = db.transaction('registros', 'readonly');
+                const store = transaction.objectStore('registros');
+                const record = await requestToPromise(store.get(recordId));
+
+                if (record) {
+                    // Fill the form fields with the record data
+                    document.getElementById('nombre-input').value = record.nombre;
+                    document.getElementById('dni-input').value = record.dni;
+                    document.getElementById('correo-input').value = record.correo;
+                    document.getElementById('tel-input').value = record.tel;
+                    document.getElementById('direccion-input').value = record.direccion;
+                    document.getElementById('postal-input').value = record.postal;
+                    document.getElementById('iban-input').value = record.iban;
+                    document.getElementById('cups-input').value = record.cups;
+                    document.getElementById('fecha_agenda').value = record.fecha_agenda;
+                    estadoSelect.value = record.estado;
+
+                    // Store the record ID in the hidden input to know we are editing
+                    formIdInput.value = recordId;
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            } catch (error) {
+                console.error('Error al cargar el registro para edición:', error);
+            }
+        }
+
+        /**
+         * Handle copying a record to the clipboard.
+         * @param {number} recordId The ID of the record to copy.
+         */
+        async function handleCopyRecord(recordId) {
+            try {
+                const transaction = db.transaction('registros', 'readonly');
+                const store = transaction.objectStore('registros');
+                const record = await requestToPromise(store.get(recordId));
+
+                if (record) {
+                    const estadoTexto = getEstadoText(record.estado);
+                    const formattedDate = formatLocalDate(record.fecha_agenda);
+
+                    const textToCopy = `-Nombre: ${record.nombre}\n-DNI: ${record.dni}\n-Correo: ${record.correo || 'N/A'}\n-Teléfono: ${record.tel || 'N/A'}\n-Dirección: ${record.direccion || 'N/A'}\n-C. Postal: ${record.postal || 'N/A'}\n-IBAN: ${record.iban}\n-CUPS: ${record.cups}\n-Fecha Agenda: ${formattedDate || 'N/A'}\n-Tipificación: ${estadoTexto || 'N/A'}\n_________________________________`;
+
+                    await navigator.clipboard.writeText(textToCopy);
+                    alert('Información copiada al portapapeles.');
+                }
+            } catch (error) {
+                console.error('Error al copiar:', error);
+                alert('Error al intentar copiar.');
+            }
+        }
+
+        /**
+         * Handles the deletion of a record.
+         * @param {number} recordId The ID of the record to delete.
+         */
+        async function handleDeleteRecord(recordId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar este registro?')) {
+                return;
+            }
+            try {
+                const transaction = db.transaction('registros', 'readwrite');
+                const store = transaction.objectStore('registros');
+                await requestToPromise(store.delete(recordId));
+
+                const liElement = document.querySelector(`li[data-id='${recordId}']`);
+                if (liElement) {
+                    liElement.remove();
+                }
+
+                // If the list is empty after deletion, show the message
+                if (recordList.children.length === 0) {
+                    recordList.innerHTML = '<li>No hay registros guardados.</li>';
+                }
+
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+                alert('Error al intentar eliminar.');
+            }
+        }
+
+        /**
+         * Helper function to get the descriptive text for the status.
+         * @param {string} estadoValue The status value.
+         * @returns {string} The descriptive text.
+         */
+        function getEstadoText(estadoValue) {
+            switch (estadoValue) {
+                case 'agend':
+                    return 'Agendado';
+                case 'vent':
+                    return 'Venta';
+                case 'n_cont':
+                    return 'No contacto';
+                default:
+                    return 'N/A';
+            }
+        }
+
+        /**
+         * Function to clear the form fields and reset the hidden ID.
+         */
+        function clearForm() {
+            form.reset();
+            formIdInput.value = '';
+            // Optional: Reset focus to the first input
+            document.getElementById('nombre-input').focus();
+        }
+        
+        // --- Event Listeners ---
+        clearBtn.addEventListener('click', (event) => {
+            event.preventDefault(); // Prevents the form from submitting
+            clearForm();
+        });
+
+        // --- Export to Excel functionality ---
+        const exportBtn = document.getElementById('export-btn');
+
+        exportBtn.addEventListener('click', async () => {
+            try {
+                const transaction = db.transaction('registros', 'readonly');
+                const store = transaction.objectStore('registros');
+                const records = await requestToPromise(store.getAll());
+
+                if (records.length === 0) {
+                    alert('No hay registros para exportar.');
+                    return;
+                }
+
+                const headers = Object.keys(records[0]).filter(key => key !== 'id');
+                const headerRow = headers.join(';') + '\n';
+
+                const csvRows = records.map(record => {
+                    return headers.map(header => {
+                        const value = record[header];
+                        const formattedValue = (header === 'fecha_agenda') ? formatLocalDate(value) : value;
+                        return `"${(formattedValue || 'N/A').toString().replace(/"/g, '""')}"`;
+                    }).join(';');
+                }).join('\n');
+
+                const csvString = headerRow + csvRows;
+
+                const userName = localStorage.getItem('agente') || 'agente';
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}`;
+                const filename = `registros_${userName}_${formattedDate}.csv`;
+
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                alert(`Datos exportados a ${filename}.`);
+            } catch (error) {
+                console.error('Error al exportar los datos:', error);
+                alert('Ocurrió un error al exportar los datos.');
+            }
+        });
+
+
+        // --- Application Initialization ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initDB();
+                await loadRecords();
+                displayUserName();
+
+                // Añade el event listener para el input de búsqueda una vez que los registros se cargan
+                searchInput.addEventListener('input', filterRecords);
+            } catch (error) {
+                console.error('The application could not be initialized correctly:', error);
+            }
+        });
+    </script>
+</body>
+</html>
