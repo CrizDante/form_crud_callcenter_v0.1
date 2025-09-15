@@ -53,10 +53,6 @@
             margin-top: 0.5rem;
         }
 
-        .input_layout #fecha_agenda {
-            /* width: 20.3em; */
-        }
-
         .input_layout select {
             width: 21em;
             font-size: 1rem;
@@ -219,6 +215,9 @@
 
 <body>
     <nav><span>Bienvenido, Cristian López (Dante)</span></nav>
+    <div id="user-nav" style="padding:1rem; box-shadow:0rem 0.35rem 1rem darkgray;">
+        <!-- Aquí se renderiza el input/botón o el span del usuario -->
+    </div>
     <h1>Formulario de agendamientos</h1>
     <main>
         <form class="form_layout">
@@ -277,6 +276,9 @@
             <button id="export-btn">Exportar a Excel</button>
             <button id="import-btn">Importar desde CSV</button>
             <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+            <div id="drop-zone" style="border:2px dashed royalblue; border-radius:0.5rem; padding:1rem; margin-top:1rem; text-align:center; color:royalblue; background:aliceblue; cursor:pointer;">
+                Arrastra aquí tu archivo CSV
+            </div>
         </div>
     </main>
 
@@ -298,9 +300,47 @@
         form.appendChild(formIdInput);
 
         // New elements for user management
-        const nav = document.querySelector('nav');
-        const userInput = document.getElementById('user_input');
-        const saveUserBtn = document.getElementById('save-user-btn');
+        const userNav = document.getElementById('user-nav');
+        // Renderiza el input y botón si no hay usuario en localStorage, si existe muestra el span
+        function renderUserComponent() {
+            const userName = localStorage.getItem('agente');
+            userNav.innerHTML = '';
+            if (userName) {
+                const span = document.createElement('span');
+                span.style.fontSize = '2rem';
+                span.style.color = 'darkgray';
+                span.textContent = `Bienvenido, ${userName}`;
+                userNav.appendChild(span);
+            } else {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'user_input';
+                input.placeholder = 'Ingresa tu nombre';
+                input.style.fontSize = '1.2rem';
+                input.style.marginRight = '0.5rem';
+                const btn = document.createElement('button');
+                btn.id = 'save-user-btn';
+                btn.textContent = 'Guardar';
+                btn.style.fontSize = '1.2rem';
+                btn.style.background = 'royalblue';
+                btn.style.color = 'white';
+                btn.style.borderRadius = '0.5rem';
+                btn.style.border = 'none';
+                btn.style.padding = '0.5rem 1rem';
+                btn.style.cursor = 'pointer';
+                btn.onclick = function() {
+                    const name = input.value.trim();
+                    if (name) {
+                        localStorage.setItem('agente', name);
+                        renderUserComponent();
+                    } else {
+                        alert('Por favor, introduce tu nombre.');
+                    }
+                };
+                userNav.appendChild(input);
+                userNav.appendChild(btn);
+            }
+        }
         // Referencia al nuevo input de búsqueda
         const searchInput = document.getElementById('search-input'); 
         const clearBtn = document.getElementById('clear');
@@ -719,19 +759,24 @@ async function loadRecords() {
          * @param {Array<object>} newRecords An array of record objects to add.
          */
         async function importNewRecords(newRecords) {
+            console.log('[importNewRecords] Registros a importar:', newRecords);
             if (!db || newRecords.length === 0) {
+                console.warn('[importNewRecords] DB no inicializada o no hay registros nuevos.');
                 return;
             }
             try {
                 const transaction = db.transaction('registros', 'readwrite');
                 const store = transaction.objectStore('registros');
 
-                const promises = newRecords.map(record => requestToPromise(store.add(record)));
+                const promises = newRecords.map(record => {
+                    console.log('[importNewRecords] Agregando registro:', record);
+                    return requestToPromise(store.add(record));
+                });
 
                 await Promise.all(promises);
 
                 alert(`${newRecords.length} registro(s) nuevo(s) importado(s) exitosamente.`);
-                await loadRecords(); // Refresh the list to show the new records
+                await loadRecords(); // Refresca la lista para mostrar los nuevos registros
 
             } catch (error) {
                 console.error('Error al importar los nuevos registros:', error);
@@ -745,18 +790,23 @@ async function loadRecords() {
          */
         async function processCSV(csvContent) {
             try {
+                console.log('[processCSV] Iniciando procesamiento de CSV');
                 const lines = csvContent.trim().split(/\r?\n/);
+                console.log('[processCSV] Líneas encontradas:', lines.length);
                 if (lines.length < 2) {
                     alert('El archivo CSV está vacío o solo contiene la cabecera.');
+                    console.warn('[processCSV] El archivo CSV está vacío o solo contiene la cabecera.');
                     return;
                 }
 
                 const header = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+                console.log('[processCSV] Cabecera detectada:', header);
                 const expectedHeaders = ['nombre', 'dni', 'correo', 'tel', 'direccion', 'postal', 'iban', 'cups', 'fecha_agenda', 'estado'];
 
                 const allHeadersPresent = expectedHeaders.every(h => header.includes(h));
                 if (!allHeadersPresent) {
                     alert(`El archivo CSV no es válido. Debe contener las siguientes columnas: ${expectedHeaders.join(', ')}`);
+                    console.error('[processCSV] Cabeceras faltantes:', header);
                     return;
                 }
 
@@ -765,9 +815,26 @@ async function loadRecords() {
                     const record = {};
                     header.forEach((h, i) => {
                         if (expectedHeaders.includes(h)) {
-                            record[h] = values[i] === 'N/A' ? '' : values[i];
+                            let value = values[i] === 'N/A' ? '' : values[i];
+                            // Si es fecha_agenda, convertir formato si es necesario
+                            if (h === 'fecha_agenda' && value) {
+                                // Detecta formato DD/MM/YYYY HH:mm
+                                const fechaRegex = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/;
+                                const match = value.match(fechaRegex);
+                                if (match) {
+                                    // Convierte a YYYY-MM-DDTHH:mm
+                                    const yyyy = match[3];
+                                    const mm = match[2];
+                                    const dd = match[1];
+                                    const hh = match[4];
+                                    const min = match[5];
+                                    value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+                                }
+                            }
+                            record[h] = value;
                         }
                     });
+                    console.log('[processCSV] Registro parseado:', record);
                     return record;
                 });
 
@@ -781,13 +848,16 @@ async function loadRecords() {
 
                 for (const record of recordsFromCSV) {
                     if (!record.dni || record.dni.trim() === '') {
+                        console.warn('[processCSV] Registro omitido por DNI vacío:', record);
                         continue;
                     }
                     if (existingDnis.has(record.dni)) {
                         duplicateRecords.push(record);
+                        console.log('[processCSV] Registro duplicado:', record);
                     } else {
                         newRecords.push(record);
                         existingDnis.add(record.dni);
+                        console.log('[processCSV] Registro nuevo:', record);
                     }
                 }
 
@@ -796,10 +866,12 @@ async function loadRecords() {
                                             `- ${duplicateRecords.length} registros duplicados omitidos.\n\n` +
                                             `¿Desea importar los registros nuevos?`;
 
+                console.log('[processCSV] Resumen:', { nuevos: newRecords.length, duplicados: duplicateRecords.length });
                 if (newRecords.length > 0 && confirm(confirmationMessage)) {
                     await importNewRecords(newRecords);
                 } else if (newRecords.length === 0) {
                     alert('No se encontraron registros nuevos para importar.');
+                    console.warn('[processCSV] No se encontraron registros nuevos para importar.');
                 }
 
             } catch (error) {
@@ -882,7 +954,7 @@ async function loadRecords() {
             try {
                 await initDB();
                 await loadRecords();
-                displayUserName();
+                renderUserComponent();
 
                 // Añade el event listener para el input de búsqueda una vez que los registros se cargan
                 searchInput.addEventListener('input', filterRecords);
@@ -897,24 +969,44 @@ async function loadRecords() {
                     if (!file) {
                         return; // No file selected
                     }
+                    readAndProcessCSV(file);
+                    csvFileInput.value = '';
+                });
 
+                // Drag & Drop CSV
+                const dropZone = document.getElementById('drop-zone');
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.style.background = '#e3f2fd';
+                });
+                dropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dropZone.style.background = 'aliceblue';
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.style.background = 'aliceblue';
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type === 'text/csv') {
+                        readAndProcessCSV(files[0]);
+                    } else {
+                        alert('Por favor, arrastra un archivo CSV válido.');
+                    }
+                });
+
+                // Función para leer y procesar el archivo CSV
+                function readAndProcessCSV(file) {
                     const reader = new FileReader();
-
                     reader.onload = (e) => {
                         const csvContent = e.target.result;
-                        processCSV(csvContent); // Process the content
+                        processCSV(csvContent);
                     };
-
                     reader.onerror = (error) => {
                         console.error('Error reading file:', error);
                         alert('Error al leer el archivo.');
                     };
-
                     reader.readAsText(file, 'UTF-8');
-
-                    // Reset file input to allow re-uploading the same file
-                    csvFileInput.value = '';
-                });
+                }
             } catch (error) {
                 console.error('The application could not be initialized correctly:', error);
             }
